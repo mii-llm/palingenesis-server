@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "palingenesis-server"
+version = "0.1.0"
+description = "HTTP job queue and training monitor for Palingenesis"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = ["palingenesis>=0.3.0", "fastapi>=0.115,<1", "pydantic>=2.9,<3", "uvicorn>=0.30,<1"]
+
+[project.optional-dependencies]
+test = ["httpx>=0.27,<0.29"]
+
+[project.scripts]
+palingenesis-server = "palingenesis_server.__main__:main"
+
+[tool.setuptools]
+packages = ["palingenesis_server"]
