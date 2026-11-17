@@ -1,0 +1,6 @@
+**
+!Dockerfile
+!pyproject.toml
+!README.md
+!palingenesis_server/
+!palingenesis_server/*.py

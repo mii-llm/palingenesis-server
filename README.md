@@ -2,7 +2,27 @@
 
 Submit Palingenesis operations over HTTP, poll job state and training metrics, and read console output while the job runs. The server runs on a single Linux or macOS host with Python 3.11+. A SQLite queue schedules one job at a time. A distributed training job can use several GPUs on that host.
 
-## Start the server
+## Run with Docker
+
+Use v0.1.0 on a Linux x86-64 NVIDIA training host. The image installs the SDK's locked CUDA 12.9 training environment. The host needs an NVIDIA driver compatible with CUDA 12.9 and the NVIDIA Container Toolkit.
+
+```sh
+docker pull ghcr.io/mii-llm/palingenesis-server:0.1.0
+export PGS_SERVER_TOKEN="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')"
+docker run -d --name palingenesis-server --init --gpus all --shm-size=2g \
+  -p 127.0.0.1:8000:8000 -e PGS_SERVER_TOKEN \
+  -v pgs-work:/workspace -v pgs-state:/state -v pgs-cache:/cache \
+  ghcr.io/mii-llm/palingenesis-server:0.1.0
+curl -fsS -H "Authorization: Bearer $PGS_SERVER_TOKEN" http://127.0.0.1:8000/health
+```
+
+For a private package, authenticate Docker to `ghcr.io` with an account that can read the package. To build the same tag from this checkout, run `docker build --platform linux/amd64 -t ghcr.io/mii-llm/palingenesis-server:0.1.0 .`.
+
+The container runs as UID/GID 10001. The work volume holds configs, datasets and outputs. The state volume holds the SQLite queue and logs, and the cache volume holds downloaded models and compiled kernels. To use a host project, replace `-v pgs-work:/workspace` with a bind mount of your project directory and give UID 10001 write access to its output directories. The `init` operation can also generate a config directly in the work volume.
+
+An API process restart on the host can leave its detached worker running. Stopping the entire container stops its training processes too. On the next start with the same state volume, the server marks unfinished running jobs as interrupted and dispatches queued jobs.
+
+## Run from source
 
 From this repository, install both sibling projects in the same Python environment. On a training host, use the Python environment with the PyTorch build and Palingenesis extras for your hardware and workload.
 
