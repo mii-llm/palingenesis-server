@@ -2,7 +2,13 @@
 import math
 import re
 
-from palingenesis.agent_tooling.monitor_run import analyze_run, parse_training_log
+try:
+    from palingenesis.agent_tooling.monitor_run import analyze_run, parse_training_log
+except ModuleNotFoundError as exc:
+    if exc.name != "palingenesis.agent_tooling":
+        raise
+    # Earlier 0.3.0 checkouts installed the diagnostic tools as a top-level package.
+    from agent_tooling.monitor_run import analyze_run, parse_training_log
 
 WINDOW = 256 * 1024
 ROLLOUT_STEP = re.compile(r"(?:^|\s)step (\d+) \| (.+)$")

@@ -48,18 +48,19 @@ class JobsTest(unittest.TestCase):
 
     def test_real_sdk_success_failure_and_cursor(self):
         with self.client() as api:
-            job = self.submit(api, "init", ["--list"])
+            (self.work / "steps.log").write_text("step=1 loss=0.25 lr=0.1 tok/s=10 dt=2s\n")
+            job = self.submit(api, "monitor", ["--log_file", "steps.log", "--brief"])
             self.assertEqual(self.wait(api, job, "succeeded")["exit_code"], 0)
             log = api.get(job["logs_url"]).content
-            self.assertIn(b"pgs train", log)
+            self.assertIn(b"[HEALTHY] step=1", log)
             first = api.get(job["logs_url"], params={"offset": 0, "limit": 5})
             rest = api.get(job["logs_url"], params={"offset": first.headers["X-Next-Offset"]})
             self.assertEqual(first.content + rest.content, log)
             self.assertEqual(api.get(job["logs_url"], params={"limit": 5}).content, log[-5:])
             self.assertEqual(api.get(job["logs_url"], params={"offset": len(log)}).content, b"")
-            bad = self.submit(api, "init", ["unknown-template"])
+            bad = self.submit(api, "monitor", [])
             self.assertEqual(self.wait(api, bad, "failed")["exit_code"], 2)
-            self.assertIn("invalid choice", api.get(bad["logs_url"]).text)
+            self.assertIn("--log_file", api.get(bad["logs_url"]).text)
             self.assertEqual([x["id"] for x in api.get("/v1/jobs").json()], [bad["id"], job["id"]])
 
     def test_auth_and_validation(self):
